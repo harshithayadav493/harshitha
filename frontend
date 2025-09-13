@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Student Finance Manager — UI/UX Prototype</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#6ee7b7; --danger:#ff7b7b; --glass: rgba(255,255,255,0.03);
+      --radius:14px; --gap:18px; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%; margin:0; background:linear-gradient(180deg,#071024 0%, #0b1220 100%); color:#e6eef6}
+    .app{display:flex; gap:var(--gap); padding:28px; max-width:1200px; margin:20px auto}
+    /* Sidebar */
+    .sidebar{width:260px; background:var(--card); border-radius:16px; padding:18px; box-shadow:0 6px 24px rgba(2,6,23,0.6)}
+    .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .logo{width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700;color:#04202b}
+    .menu{display:flex;flex-direction:column;gap:8px}
+    .menu button{background:transparent;border:0;color:var(--muted);padding:10px;border-radius:10px;text-align:left;cursor:pointer}
+    .menu button.active{color:#e6eef6;background:var(--glass)}
+    .compact{font-size:13px}
+
+    /* Main */
+    .main{flex:1;display:flex;flex-direction:column;gap:18px}
+    .topbar{display:flex;justify-content:space-between;align-items:center}
+    .search{flex:1;margin-left:12px}
+    .card-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent); padding:16px; border-radius:var(--radius);}
+    .balance{grid-column:span 2}
+    .small{font-size:13px;color:var(--muted)}
+    .big{font-size:22px;font-weight:700}
+
+    /* Dashboard grid */
+    .dashboard{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+    .spend-card{padding:16px}
+    .expenses{display:flex;flex-direction:column;gap:12px}
+    .expense-item{display:flex;justify-content:space-between;align-items:center;padding:10px;background:rgba(255,255,255,0.02);border-radius:10px}
+
+    /* goals & alerts */
+    .goals{display:flex;flex-direction:column;gap:12px}
+    .goal{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent)}
+    .progress{height:8px;background:rgba(255,255,255,0.04);border-radius:6px;overflow:hidden}
+    .progress > i{display:block;height:100%;background:var(--accent)}
+
+    /* add expense form */
+    .add-expense{display:flex;gap:8px;align-items:center}
+    input,select,button{padding:10px;border-radius:10px;border:0;background:rgba(255,255,255,0.02);color:inherit}
+    button.primary{background:linear-gradient(90deg,var(--accent),#60a5fa);color:#04202b;font-weight:700}
+
+    footer{font-size:12px;color:var(--muted);text-align:center;margin-top:12px}
+
+    /* responsive */
+    @media (max-width:1000px){.app{flex-direction:column;padding:18px}.sidebar{width:100%;display:flex;flex-direction:row;gap:12px;overflow:auto}.main{width:100%}.card-row{grid-template-columns:repeat(1,1fr)}.dashboard{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="app" role="application">
+    <aside class="sidebar" aria-label="Sidebar navigation">
+      <div class="brand">
+        <div class="logo">SF</div>
+        <div>
+          <div style="font-weight:700">Student Finance</div>
+          <div class="small">UI/UX Prototype</div>
+        </div>
+      </div>
+      <nav class="menu" aria-label="Main menu">
+        <button class="active" aria-current="page">Dashboard</button>
+        <button>Transactions</button>
+        <button>Goals</button>
+        <button>Analytics</button>
+        <button>Settings</button>
+      </nav>
+      <div style="margin-top:12px" class="compact small">
+        Quick tips: Add expenses, set monthly budgets, and watch predictions.
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <h2 style="margin:0">Dashboard</h2>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="small">Hello, Student</div>
+          <button title="Notifications" aria-label="Notifications">🔔</button>
+          <button title="Profile" aria-label="Profile">👤</button>
+        </div>
+      </div>
+
+      <section class="card-row" aria-label="Summary cards">
+        <div class="card balance">
+          <div class="small">Current Balance</div>
+          <div class="big" id="balance">₹ 12,480</div>
+          <div class="small">Monthly budget: ₹ 15,000 • Spent: ₹ 8,520</div>
+        </div>
+
+        <div class="card" aria-hidden="false">
+          <div class="small">This month spending</div>
+          <div class="big" id="monthSpending">₹ 8,520</div>
+          <div class="small">Auto-categorized: <span id="topCat">Food</span></div>
+        </div>
+
+        <div class="card">
+          <div class="small">Projected end-of-month</div>
+          <div class="big" id="projected">₹ 13,900</div>
+          <div class="small" id="alertText">Within budget</div>
+        </div>
+      </section>
+
+      <section class="dashboard">
+        <div class="card spend-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <h3 style="margin:0">Spending Forecast</h3>
+            <div class="small">Last 6 months</div>
+          </div>
+          <canvas id="forecastChart" style="max-height:300px;margin-top:12px"></canvas>
+
+          <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center">
+            <div class="add-expense" role="form" aria-label="Add expense">
+              <input id="desc" placeholder="Lunch at canteen" aria-label="Description" />
+              <input id="amt" type="number" placeholder="Amount" aria-label="Amount" />
+              <select id="cat" aria-label="Category">
+                <option>Food</option>
+                <option>Transport</option>
+                <option>Books</option>
+                <option>Entertainment</option>
+                <option>Others</option>
+              </select>
+              <button class="primary" id="addBtn">Add</button>
+            </div>
+            <div class="small">Auto-categorization + predictive alerts</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <h4 style="margin:0 0 8px 0">Recent transactions</h4>
+            <div class="expenses" id="txList" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <aside class="card">
+          <h3 style="margin-top:0">Goals & Alerts</h3>
+          <div class="goals">
+            <div class="goal">
+              <div style="display:flex;justify-content:space-between"><div>Emergency Fund</div><div class="small">₹ 2,000 / ₹ 5,000</div></div>
+              <div class="progress" style="margin-top:8px"><i style="width:40%"></i></div>
+            </div>
+            <div class="goal">
+              <div style="display:flex;justify-content:space-between"><div>Books & Supplies</div><div class="small">₹ 600 / ₹ 1,200</div></div>
+              <div class="progress" style="margin-top:8px"><i style="width:50%"></i></div>
+            </div>
+            <div style="margin-top:12px">
+              <h4 style="margin:0 0 8px 0">Alerts</h4>
+              <div id="alerts" class="small">No alerts</div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <footer>Prototype — front-end only. Convert to React + backend to persist data.</footer>
+    </main>
+  </div>
+
+  <script>
+    // Sample transactional data (last 6 months + current)
+    const sample = {
+      months: ['Apr','May','Jun','Jul','Aug','Sep'],
+      spend: [7200, 6500, 8400, 9200, 7800, 8520],
+      tx: [
+        {desc:'Canteen lunch',amount:45,when:'Today',cat:'Food'},
+        {desc:'Bus pass',amount:300,when:'Today',cat:'Transport'},
+        {desc:'Stationery',amount:250,when:'Yesterday',cat:'Books'},
+      ],
+      budgetMonthly:15000
+    }
+
+    // --- Chart (simple linear projection) ---
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    const chart = new Chart(ctx,{
+      type:'line',
+      data:{labels:sample.months, datasets:[{label:'Monthly spend', data:sample.spend, tension:0.3, fill:false, borderWidth:2}]},
+      options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}
+    });
+
+    // render tx list
+    function renderTx(){
+      const list = document.getElementById('txList'); list.innerHTML='';
+      sample.tx.slice().reverse().forEach(t=>{
+        const el = document.createElement('div'); el.className='expense-item';
+        el.innerHTML = `<div><strong>${t.desc}</strong><div class='small'>${t.when} • ${t.cat}</div></div><div>₹ ${t.amount}</div>`;
+        list.appendChild(el);
+      })
+      document.getElementById('monthSpending').textContent = '₹ ' + (sample.spend[sample.spend.length-1]);
+      updateBalance();
+    }
+
+    // naive autocategorization by keywords
+    function autoCategory(desc){
+      const d = desc.toLowerCase();
+      if(/bus|auto|uber|ola|metro|train/.test(d)) return 'Transport';
+      if(/book|pen|stationery|notebook/.test(d)) return 'Books';
+      if(/canteen|lunch|dinner|cafe|tea|coffee|mess/.test(d)) return 'Food';
+      if(/movie|netflix|spotify|game/.test(d)) return 'Entertainment';
+      return 'Others';
+    }
+
+    // simple linear regression prediction for next month based on last 3 months
+    function predictNext(){
+      const arr = sample.spend.slice(-3);
+      // slope approx = (last - first)/2
+      const slope = (arr[arr.length-1] - arr[0]) / (arr.length-1 || 1);
+      const next = Math.round(arr[arr.length-1] + slope);
+      return next || arr[arr.length-1];
+    }
+
+    function updateProjection(){
+      const next = predictNext();
+      const projected = sample.spend[sample.spend.length-1] + (next - sample.spend[sample.spend.length-1]);
+      document.getElementById('projected').textContent = '₹ ' + projected;
+      const alertText = document.getElementById('alertText');
+      const alertsEl = document.getElementById('alerts');
+      if(projected > sample.budgetMonthly){
+        alertText.textContent = 'Over budget'; alertText.style.color = 'var(--danger)';
+        alertsEl.innerHTML = `<div style='color:var(--danger)'>Projected spending exceeds monthly budget. Consider cutting discretionary spend.</div>`;
+      } else {
+        alertText.textContent = 'Within budget'; alertText.style.color = '';
+        alertsEl.textContent = 'No alerts';
+      }
+    }
+
+    function updateBalance(){
+      // naive balance calc using last month's numbers
+      const balance = 12480; // placeholder
+      document.getElementById('balance').textContent = '₹ ' + balance;
+      // top category
+      document.getElementById('topCat').textContent = 'Food';
+    }
+
+    // add expense handler
+    document.getElementById('addBtn').addEventListener('click', ()=>{
+      const desc = document.getElementById('desc').value.trim();
+      const amt = Number(document.getElementById('amt').value);
+      let cat = document.getElementById('cat').value;
+      if(!desc || !amt) return alert('Enter description and amount');
+      // auto-categorize if user selected Others or left blank
+      if(cat === 'Others' || !cat) cat = autoCategory(desc);
+      sample.tx.push({desc,amount:amt,when:'Today',cat});
+      // update spend last month value to reflect added (for demo only)
+      sample.spend[sample.spend.length-1] = sample.spend[sample.spend.length-1] + amt;
+      chart.data.datasets[0].data = sample.spend;
+      chart.update();
+      renderTx(); updateProjection();
+      // clear inputs
+      document.getElementById('desc').value=''; document.getElementById('amt').value='';
+    })
+
+    // initial render
+    renderTx(); updateProjection();
+
+    // accessibility: keyboard shortcuts
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'n'){document.getElementById('desc').focus()}
+    })
+
+    // notes: this is a front-end prototype. Persist to localStorage or backend in next step.
+  </script>
+</body>
+</html>
